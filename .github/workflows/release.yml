@@ -1,0 +1,141 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:  # Allows manual triggering
+
+env:
+  GO_VERSION: '1.24'
+
+jobs:
+  build:
+    name: Build Cross-Platform Binaries
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: windows
+            goarch: amd64
+            name: discord-time-presence-windows-amd64.exe
+          - goos: windows
+            goarch: arm64
+            name: discord-time-presence-windows-arm64.exe
+          - goos: linux
+            goarch: amd64
+            name: discord-time-presence-linux-amd64
+          - goos: linux
+            goarch: arm64
+            name: discord-time-presence-linux-arm64
+          - goos: darwin
+            goarch: amd64
+            name: discord-time-presence-darwin-amd64
+          - goos: darwin
+            goarch: arm64
+            name: discord-time-presence-darwin-arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Get dependencies
+        run: go mod download
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: go build -ldflags="-s -w" -o ${{ matrix.name }} .
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: ${{ matrix.name }}
+          retention-days: 1
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./binaries
+
+      - name: Flatten artifacts directory
+        run: |
+          mkdir -p ./release-binaries
+          find ./binaries -name "discord-time-presence-*" -exec cp {} ./release-binaries/ \;
+
+      - name: Generate release notes
+        run: |
+          echo "# Discord Time Presence ${GITHUB_REF#refs/tags/}" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "## Downloads" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "Choose the appropriate binary for your operating system:" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "### Windows" >> RELEASE_NOTES.md
+          echo "- **64-bit (Intel/AMD)**: \`discord-time-presence-windows-amd64.exe\`" >> RELEASE_NOTES.md
+          echo "- **64-bit (ARM)**: \`discord-time-presence-windows-arm64.exe\`" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "### Linux" >> RELEASE_NOTES.md
+          echo "- **64-bit (Intel/AMD)**: \`discord-time-presence-linux-amd64\`" >> RELEASE_NOTES.md
+          echo "- **64-bit (ARM)**: \`discord-time-presence-linux-arm64\`" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "### macOS" >> RELEASE_NOTES.md
+          echo "- **Intel Macs**: \`discord-time-presence-darwin-amd64\`" >> RELEASE_NOTES.md
+          echo "- **Apple Silicon (M1/M2/M3)**: \`discord-time-presence-darwin-arm64\`" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "## Installation" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "1. Download the appropriate binary for your system" >> RELEASE_NOTES.md
+          echo "2. Make it executable (Linux/macOS): \`chmod +x discord-time-presence-*\`" >> RELEASE_NOTES.md
+          echo "3. Set your Discord Client ID: \`export DISCORD_CLIENT_ID=\"your_client_id\"\`" >> RELEASE_NOTES.md
+          echo "4. Run the binary" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+
+      - name: Create checksums
+        run: |
+          cd release-binaries
+          sha256sum * > checksums.txt
+          echo "## Checksums (SHA256)" >> ../RELEASE_NOTES.md
+          echo '```' >> ../RELEASE_NOTES.md
+          cat checksums.txt >> ../RELEASE_NOTES.md
+          echo '```' >> ../RELEASE_NOTES.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            release-binaries/*
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
