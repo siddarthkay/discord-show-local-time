@@ -78,7 +78,7 @@ Your Discord profile will then show:
 - **State:** "🗓️ Mon, Jun 23"
 
 
-## 🔨 Building from Source
+## Building from Source
 
 ### Prerequisites
 
@@ -201,28 +201,28 @@ launchctl load ~/Library/LaunchAgents/com.yourname.discord-time-presence.plist
 ### Connection Issues
 
 **"Failed to connect to Discord"**
--[ ]  Ensure Discord Desktop app is running (not browser)
--[ ] Check that Rich Presence is enabled in Discord Settings → Activity Privacy
--[ ] Try restarting Discord completely
--[ ] Verify your Client ID is correct (18-19 digits)
+- [ ]  Ensure Discord Desktop app is running (not browser)
+- [ ] Check that Rich Presence is enabled in Discord Settings → Activity Privacy
+- [ ] Try restarting Discord completely
+- [ ] Verify your Client ID is correct (18-19 digits)
 
 **"DISCORD_CLIENT_ID environment variable required"**
--[ ] Set the environment variable or let the app prompt you
--[ ] Make sure there are no extra spaces in your Client ID
+- [ ] Set the environment variable or let the app prompt you
+- [ ] Make sure there are no extra spaces in your Client ID
 
 ### Rich Presence Not Showing
 
 **Rich Presence not visible:**
--[ ] Enable "Display current activity as a status message" in Discord
--[ ] Make sure you're using Discord Desktop (not web)
--[ ] Check that another Rich Presence app isn't conflicting
--[ ] Try running Discord as administrator (Windows)
+- [ ] Enable "Display current activity as a status message" in Discord
+- [ ] Make sure you're using Discord Desktop (not web)
+- [ ] Check that another Rich Presence app isn't conflicting
+- [ ] Try running Discord as administrator (Windows)
 
 ### Build Issues
 
 **"go: command not found"**
--[ ] Install Go from [golang.org](https://golang.org/dl/)
--[ ] Add Go to your PATH
+- [ ] Install Go from [golang.org](https://golang.org/dl/)
+- [ ] Add Go to your PATH
 
 ### Platform-Specific Issues
 
