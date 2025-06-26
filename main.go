@@ -100,6 +100,17 @@ func (d *DiscordRPC) handshake() error {
 	return d.sendMessage(OpHandshake, handshake)
 }
 
+func (d *DiscordRPC) reconnect() error {
+	if d.conn != nil {
+		if err := d.conn.Close(); err != nil {
+			// let us see why
+			fmt.Printf("Warning: failed to close existing connection: %v\n", err)
+		}
+		d.conn = nil
+	}
+	return d.Connect()
+}
+
 func (d *DiscordRPC) SetActivity(activity ActivityPayload) error {
 	msg := SetActivityMessage{
 		Command: "SET_ACTIVITY",
@@ -110,10 +121,22 @@ func (d *DiscordRPC) SetActivity(activity ActivityPayload) error {
 		Nonce: fmt.Sprintf("%d", time.Now().UnixNano()),
 	}
 
-	return d.sendMessage(OpFrame, msg)
+	err := d.sendMessage(OpFrame, msg)
+	if err != nil {
+		// to fix :Error updating rich presence: write unix ->/var/folders/nb/l9h53lq15wd6xtccvkz737_00000gn/T/discord-ipc-0: write: broken pipe
+		if reconErr := d.reconnect(); reconErr != nil {
+			return fmt.Errorf("failed to update activity and reconnect failed: %v, %v", err, reconErr)
+		}
+		return d.sendMessage(OpFrame, msg)
+	}
+	return nil
 }
 
 func (d *DiscordRPC) sendMessage(opcode int, payload interface{}) error {
+	if d.conn == nil {
+		return fmt.Errorf("no connection available")
+	}
+
 	data, err := json.Marshal(payload)
 	if err != nil {
 		return err
