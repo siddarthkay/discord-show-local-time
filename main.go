@@ -13,6 +13,9 @@ import (
 	"time"
 )
 
+// will be set during build via ldflags
+var DefaultClientID = "PLACEHOLDER_CLIENT_ID"
+
 // Discord RPC message types
 const (
 	OpHandshake = iota
@@ -168,6 +171,11 @@ func (d *DiscordRPC) Close() error {
 func getClientID() string {
 	if clientID := os.Getenv("DISCORD_CLIENT_ID"); clientID != "" {
 		return clientID
+	}
+
+	// For CI, this will be done via Github Actions and with ldflags
+	if DefaultClientID != "" && DefaultClientID != "PLACEHOLDER_CLIENT_ID" {
+		return DefaultClientID
 	}
 
 	// For Running Locally
