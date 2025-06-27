@@ -73,6 +73,9 @@ func (d *DiscordRPC) Connect() error {
 		if err == nil {
 			d.conn = conn
 			return d.handshake()
+		} else {
+			fmt.Printf("Error: failed to dial unix with pipe path: %v\n", pipePath)
+			fmt.Printf("net.Dial error is : %v\n", err)
 		}
 	}
 	return fmt.Errorf("failed to connect to Discord")
