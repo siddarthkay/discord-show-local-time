@@ -166,35 +166,26 @@ func (d *DiscordRPC) Close() error {
 }
 
 func getClientID() string {
-	clientID := os.Getenv("DISCORD_CLIENT_ID")
-	if clientID != "" {
+	if clientID := os.Getenv("DISCORD_CLIENT_ID"); clientID != "" {
 		return clientID
 	}
 
-	fmt.Println("Discord Client ID not found in environment variables, did you forget to export DISCORD_CLIENT_ID ?")
+	// For Running Locally
+	fmt.Println("No Discord Client ID available!")
 	fmt.Println()
-	fmt.Println("To get your Discord Client ID:")
-	fmt.Println("1. Go to: https://discord.com/developers/applications")
-	fmt.Println("2. Click 'New Application' and give it a name")
-	fmt.Println("3. Copy the 'Application ID' from the General Information page")
-	fmt.Println("4. Enter it in the prompt below")
+	fmt.Println("This binary was not built with a Discord Client ID.")
+	fmt.Println("Please either:")
+	fmt.Println("Download the official release from GitHub -> https://github.com/siddarthkay/discord-show-local-time/releases ")
+	fmt.Println("OR")
+	fmt.Println("Set DISCORD_CLIENT_ID environment variable with your own Discord Application ID")
 	fmt.Println()
-	fmt.Print("Enter your Discord Client ID: ")
-
-	reader := bufio.NewReader(os.Stdin)
-	input, err := reader.ReadString('\n')
-	if err != nil {
-		fmt.Printf("Error reading input: %v\n", err)
-		os.Exit(1)
-	}
-
-	clientID = strings.TrimSpace(input)
-	if clientID == "" {
-		fmt.Println("No Client ID provided. Exiting...")
-		os.Exit(1)
-	}
-
-	return clientID
+	fmt.Println("To create your own Discord Application:")
+	fmt.Println("• Go to: https://discord.com/developers/applications")
+	fmt.Println("• Click 'New Application' and give it a name")
+	fmt.Println("• Copy the 'Application ID' from the General Information page")
+	fmt.Println("• Set it as: export DISCORD_CLIENT_ID='your_application_id'")
+	os.Exit(1)
+	return ""
 }
 
 func validateClientID(clientID string) bool {
@@ -233,7 +224,7 @@ func main() {
 		}
 	}
 
-	fmt.Printf("Connecting to Discord using Client ID: %s\n", clientID)
+	fmt.Println("Connecting to Discord...")
 
 	rpc := NewDiscordRPC(clientID)
 	if err := rpc.Connect(); err != nil {
@@ -243,7 +234,6 @@ func main() {
 		fmt.Println("• Make sure Discord Desktop app is running (not browser)")
 		fmt.Println("• Enable 'Display current activity as a status message' in Discord Settings")
 		fmt.Println("• Try restarting Discord completely")
-		fmt.Println("• Verify your Client ID is correct")
 		os.Exit(1)
 	}
 	defer func(rpc *DiscordRPC) {

@@ -25,7 +25,14 @@ Your Discord profile will display this as a "Playing" status that your friends c
 - Works on Windows, macOS, and Linux
 - Single binary with no complicated build setup
 
-## Prerequisites
+## Instructions for Non Technical Users
+
+## Just give me the binaries OR executable OR exe
+- You can download the latest release from https://github.com/siddarthkay/discord-show-local-time/releases
+- just unzip the binary that corresponds to your Environment
+- Run the executable and it should connect to your Discord Desktop App
+
+## Instructions for Technical Users
 
 - **Discord Desktop App** (Rich Presence doesn't work with browser Discord)
 - A **Discord Application ID** (free to create)
