@@ -69,7 +69,7 @@ func NewDiscordRPC(clientID string) *DiscordRPC {
 func (d *DiscordRPC) Connect() error {
 	for i := 0; i < 10; i++ {
 		pipePath := d.getPipePath(i)
-		conn, err := net.Dial("unix", pipePath)
+		conn, err := dialPipe(pipePath)
 		if err == nil {
 			d.conn = conn
 			return d.handshake()
