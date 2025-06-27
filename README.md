@@ -8,6 +8,12 @@ Discord lacked this due to their stance on _privacy_ lol.
 ![Go](https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white)
 ![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)
 
+## Screenshot
+
+| Slack                           | Discord                         |
+|---------------------------------|---------------------------------|
+| <img src="assets/slack-local-time.png" width="180" height="260"> | <img src="assets/discord-local-time.png" width="180" height="260"> |
+
 ## What it does
 
 This app creates a Discord Rich Presence that shows:
