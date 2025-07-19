@@ -1,4 +1,4 @@
-BINARY_NAME=seelocaltime
+BINARY_NAME=discord-time-presence
 MAIN_FILE=main.go
 TEST_DIR=test-results
 
