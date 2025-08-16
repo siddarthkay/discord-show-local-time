@@ -100,14 +100,19 @@ Your Discord profile will then show:
 go version  # Should be 1.24+
 ```
 
+```bash
 # Clone the repository
 git clone https://github.com/siddarthkay/discord-show-local-time.git
 cd discord-show-local-time
+```
 
 ### Build Commands
 ```bash
 # Current platform
 make build
+
+# Build and code sign for macOS (requires Apple Developer certificate)
+make build-signed
 ```
 
 ## For Nix Users
@@ -148,6 +153,69 @@ make run
 > ```bash
 > nix --extra-experimental-features "nix-command flakes" <command>
 > ```
+
+## Code Signing (macOS Developers)
+
+To eliminate macOS security warnings, the project supports automatic code signing:
+
+### Setup Code Signing Identity
+
+1. **Obtain Apple Developer Certificate**: You need an Apple Developer account and certificate
+2. **Check Available Identities**:
+   ```bash
+   make codesign-info
+   ```
+3. **Set Custom Identity** (optional):
+   ```bash
+   # Override default identity in Makefile or set environment variable
+   export CODESIGN_IDENTITY="Your Developer Name (TEAM_ID)"
+   ```
+
+### Code Signing Commands
+
+```bash
+# Build and sign single binary
+make build-signed
+
+# Build and sign all macOS releases
+make release-all-signed
+
+# Check current configuration
+make codesign-info
+```
+
+### CI/CD Code Signing
+
+The GitHub Actions workflow automatically code signs macOS binaries when:
+- Building from a git tag (release)
+- Required secrets are configured in your GitHub repository
+
+#### Required GitHub Secrets:
+1. `APPLE_CERTIFICATE_P12`: Base64 encoded .p12 certificate file
+2. `APPLE_CERTIFICATE_PASSWORD`: Password for the .p12 certificate
+
+#### Setting Up GitHub Secrets:
+
+1. **Export your certificate as .p12**:
+   - Open Keychain Access
+   - Find your "Developer ID Application" or "Apple Development" certificate
+   - Right-click → Export → Save as .p12 file
+
+2. **Convert to Base64**:
+   ```bash
+   base64 -i your-certificate.p12 | pbcopy
+   ```
+
+3. **Add to GitHub Secrets**:
+   - Go to repository Settings → Secrets and variables → Actions
+   - Add `APPLE_CERTIFICATE_P12` with the base64 content
+   - Add `APPLE_CERTIFICATE_PASSWORD` with your certificate password
+
+#### Certificate Types:
+- **Developer ID Application**: Best for public distribution (recommended)
+- **Apple Development**: Works but shows as "development" in signatures
+
+> **Note**: If secrets are not configured, the workflow will build unsigned binaries with a warning.
 
 ## Configuration
 
@@ -279,11 +347,27 @@ launchctl load ~/Library/LaunchAgents/com.yourname.discord-time-presence.plist
 ### Platform-Specific Issues
 
 **macOS: "cannot be opened because the developer cannot be verified"**
+
+*Note: Official releases from GitHub are code-signed and should not show this warning.*
+
+If you encounter this issue with a manually built binary:
 ```bash
 # Allow the app to run
 sudo spctl --add discord-time-presence
 # Or run with:
 sudo xattr -d com.apple.quarantine discord-time-presence
+```
+
+For developers building from source on macOS:
+```bash
+# Build with code signing (requires Apple Developer certificate)
+make build-signed
+
+# Build all platforms with macOS code signing
+make release-all-signed
+
+# Check available code signing identities
+make codesign-info
 ```
 
 **Linux: Permission denied**
