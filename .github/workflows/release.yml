@@ -10,8 +10,8 @@ env:
   GO_VERSION: '1.24'
 
 jobs:
-  build:
-    name: Build Cross-Platform Binaries
+  build-non-macos:
+    name: Build Non-macOS Binaries
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -28,12 +28,6 @@ jobs:
           - goos: linux
             goarch: arm64
             name: discord-time-presence-linux-arm64
-          - goos: darwin
-            goarch: amd64
-            name: discord-time-presence-darwin-amd64
-          - goos: darwin
-            goarch: arm64
-            name: discord-time-presence-darwin-arm64
 
     steps:
       - name: Checkout code
@@ -67,6 +61,110 @@ jobs:
           go build \
             -ldflags="-s -w -X 'main.DefaultClientID=${{ secrets.DISCORD_CLIENT_ID }}'" \
             -o ${{ matrix.name }} .
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: ${{ matrix.name }}
+          retention-days: 1
+
+  build-macos-signed:
+    name: Build and Sign macOS Binaries
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - goarch: amd64
+            name: discord-time-presence-darwin-amd64
+          - goarch: arm64
+            name: discord-time-presence-darwin-arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Get dependencies
+        run: go mod download
+
+      - name: Build binary
+        env:
+          GOOS: darwin
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+          DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
+        run: |
+          go build \
+            -ldflags="-s -w -X 'main.DefaultClientID=${{ secrets.DISCORD_CLIENT_ID }}'" \
+            -o ${{ matrix.name }} .
+
+      - name: Import Code-Signing Certificates
+        if: startsWith(github.ref, 'refs/tags/') && env.APPLE_CERTIFICATE_PASSWORD != ''
+        env:
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_CERTIFICATE_DECRYPT_KEY: ${{ secrets.APPLE_CERTIFICATE_DECRYPT_KEY }}
+        run: |
+          echo "Decrypting certificate from repository..."
+          echo "$APPLE_CERTIFICATE_DECRYPT_KEY" | openssl aes-256-cbc -pbkdf2 -d -salt -in .github/certificates/apple-dev.p12.enc -out apple-cert.p12 -pass stdin
+          
+          # Import certificate to keychain
+          security create-keychain -p "build" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "build" build.keychain
+          security import apple-cert.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "build" build.keychain
+          
+          # Clean up
+          rm apple-cert.p12
+
+      - name: Code Sign Binary
+        if: startsWith(github.ref, 'refs/tags/') && env.APPLE_CERTIFICATE_PASSWORD != ''
+        env:
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          echo "Available code signing identities:"
+          security find-identity -v -p codesigning
+          echo ""
+          echo "Code signing ${{ matrix.name }}..."
+          # Try Developer ID Application first (for distribution), fallback to Apple Development
+          if security find-identity -v -p codesigning | grep -q "Developer ID Application"; then
+            IDENTITY=$(security find-identity -v -p codesigning | grep "Developer ID Application" | head -1 | sed 's/.*"\(.*\)"/\1/')
+            echo "Using Developer ID Application: $IDENTITY"
+            codesign --sign "$IDENTITY" --force --verbose ${{ matrix.name }}
+          elif security find-identity -v -p codesigning | grep -q "Apple Development"; then
+            IDENTITY=$(security find-identity -v -p codesigning | grep "Apple Development" | head -1 | sed 's/.*"\(.*\)"/\1/')
+            echo "Using Apple Development: $IDENTITY"
+            codesign --sign "$IDENTITY" --force --verbose ${{ matrix.name }}
+          else
+            echo "No suitable code signing identity found"
+            exit 1
+          fi
+          echo "Verifying signature..."
+          codesign --verify --verbose ${{ matrix.name }}
+          codesign --display --verbose=2 ${{ matrix.name }}
+
+      - name: Upload unsigned binary (fallback)
+        if: startsWith(github.ref, 'refs/tags/') && env.APPLE_CERTIFICATE_PASSWORD == ''
+        env:
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          echo "⚠️  Code signing skipped - no certificate configured"
+          echo "Binary will be unsigned and may show security warnings on macOS"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
