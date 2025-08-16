@@ -110,6 +110,45 @@ cd discord-show-local-time
 make build
 ```
 
+## For Nix Users
+
+If you're using Nix or NixOS, you can run this application without installing Go or other dependencies:
+
+### Quick Run
+```bash
+# Run directly with nix (requires flakes)
+nix run github:siddarthkay/discord-show-local-time
+
+# Or clone and run locally
+git clone https://github.com/siddarthkay/discord-show-local-time.git
+cd discord-show-local-time
+nix run
+```
+
+### Build with Nix
+```bash
+# Build the application
+nix build
+
+# The binary will be available at ./result/bin/discord-time-presence
+./result/bin/discord-time-presence
+```
+
+### Development Environment
+```bash
+# Enter development shell with Go and make available
+nix develop
+
+# Then use standard make commands
+make build
+make run
+```
+
+> **Note**: Nix commands require experimental flakes feature. Enable with:
+> ```bash
+> nix --extra-experimental-features "nix-command flakes" <command>
+> ```
+
 ## Configuration
 
 ### Setting Environment Variables
