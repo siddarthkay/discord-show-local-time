@@ -146,15 +146,13 @@ func (d *DiscordRPC) sendMessage(opcode int, payload interface{}) error {
 	}
 
 	// Discord RPC protocol: opcode (4 bytes) + length (4 bytes) + data
-	header := make([]byte, 8)
-	binary.LittleEndian.PutUint32(header[0:4], uint32(opcode))
-	binary.LittleEndian.PutUint32(header[4:8], uint32(len(data)))
+	// IMPORTANT: Must send as single write (per Discord IPC spec)
+	frame := make([]byte, 8+len(data))
+	binary.LittleEndian.PutUint32(frame[0:4], uint32(opcode))
+	binary.LittleEndian.PutUint32(frame[4:8], uint32(len(data)))
+	copy(frame[8:], data)
 
-	if _, err := d.conn.Write(header); err != nil {
-		return err
-	}
-
-	if _, err := d.conn.Write(data); err != nil {
+	if _, err := d.conn.Write(frame); err != nil {
 		return err
 	}
 
