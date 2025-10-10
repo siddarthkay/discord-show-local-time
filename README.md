@@ -97,7 +97,7 @@ Your Discord profile will then show:
 
 ```bash
 # Check Go version
-go version  # Should be 1.24+
+go version  # Should be 1.25+
 ```
 
 ```bash
