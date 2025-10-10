@@ -1,0 +1,15 @@
+name: Pull Request CI
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      upload-artifacts: true
+      retention-days: 7
+      sign-macos: false  # Skip code signing for PRs
