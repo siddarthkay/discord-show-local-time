@@ -387,6 +387,14 @@ If this project helped you, please give it a [star](https://github.com/siddarthk
 
 - **Issues**: [GitHub Issues](https://github.com/siddarthkay/discord-show-local-time/issues)
 
+## Technical References
+
+This project implements the Discord IPC Rich Presence protocol directly without external dependencies. For developers interested in the protocol details:
+
+- **Discord RPC (Official)**: [github.com/discord/discord-rpc](https://github.com/discord/discord-rpc)
+- **IPC Protocol Specification**: [Hard Mode Documentation](https://github.com/discord/discord-rpc/blob/master/documentation/hard-mode.md)
+- **Community Protocol Documentation**: [robins.one/notes/discord-rpc-documentation](https://robins.one/notes/discord-rpc-documentation.html)
+
 ## Acknowledgments
 
 - Discord for providing the Rich Presence API
